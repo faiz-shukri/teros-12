@@ -85,6 +85,7 @@ void Teros12::sendMeasure()
     // aM0!
     char cmd[] = "aM!";
     cmd[0] = address;
+    sdi->setActive();
     sdi->sendCommand((const char *)cmd);
 }
 
@@ -93,6 +94,7 @@ void Teros12::sendRead()
     // aD0!
     char cmd[] = "aD0!";
     cmd[0] = address;
+    sdi->setActive();
     sdi->sendCommand((const char *)cmd);
 }
 uint8_t Teros12::readData()
@@ -138,24 +140,19 @@ uint8_t Teros12::tick()
     case 0:
     {
         // Serial.println(__LINE__);
-        step++;
-        break;
-    }
-    case 1: // wait next sample cycle
-    {
         if (timer >= pollingRate)
         {
             timer = 0;
+
             clearBuffer();
             sendMeasure();
             e = 0;
             // Serial.println(__LINE__);
             step++;
         }
-
         break;
     }
-    case 2: // wait reply
+    case 1: // wait reply
     {
 
         readToBuffer();
@@ -168,7 +165,7 @@ uint8_t Teros12::tick()
         break;
     }
 
-    case 3: // send read
+    case 2: // send read
     {
         if (rBufferIndex == 0) // no reply from prev, abort!
         {
@@ -184,7 +181,7 @@ uint8_t Teros12::tick()
 
         break;
     }
-    case 4: // wait reply
+    case 3: // wait reply
     {
         readToBuffer();
         if (e >= TEROS12_READ_DELAY)
@@ -194,7 +191,7 @@ uint8_t Teros12::tick()
         }
         break;
     }
-    case 5: // process read
+    case 4: // process read
     {
         if (rBufferIndex == 0) // no reply from prev, abort!
             error = 1;
@@ -213,7 +210,6 @@ uint8_t Teros12::tick()
 
     if (step == 0)
     {
-
         if (error && onError != nullptr)
             onError(this);
         if (!error && onDataUpdated != nullptr)
